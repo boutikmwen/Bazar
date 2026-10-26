@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html lang="ht"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bazar Mwen</title></head>
+<body style="font-family:sans-serif;padding:16px"><h1>Bazar Mwen</h1><p id="s">Ap chaje...</p><ul id="l"></ul>
+<script>
+fetch("https://rnwufchunuayqkivfqkf.supabase.co/rest/v1/categories?select=name&order=id",{headers:{apikey:"sb_publishable_YBfnR5ysGK7KqnwjPsKWTg_kuCUjPXj"}}).then(r=>r.json()).then(d=>{document.getElementById("s").textContent="Koneksyon OK: "+d.length+" kategori";d.forEach(c=>{var li=document.createElement("li");li.textContent=c.name;document.getElementById("l").appendChild(li)})}).catch(e=>{document.getElementById("s").textContent="Erè: "+e})
+</script></body></html>
