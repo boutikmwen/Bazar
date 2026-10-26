@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ht"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bazar Mwen</title>
+<style>body{font-family:sans-serif;margin:0;padding:16px;max-width:480px}input,button{width:100%;padding:12px;margin:6px 0;font-size:16px;box-sizing:border-box}button{background:#0a7d3b;color:#fff;border:0;border-radius:6px}.b2{background:#555}#m{color:#b00;min-height:20px}</style></head>
+<body><h1>Bazar Mwen</h1>
+<div id="out"><h3>Antre oswa kreye yon kont</h3>
+<input id="n" placeholder="Non ou (pou enskripsyon)">
+<input id="e" type="email" placeholder="Imèl">
+<input id="p" type="password" placeholder="Modpas (omwen 6 karaktè)">
+<button onclick="up()">Kreye kont</button><button class="b2" onclick="inn()">Konekte</button></div>
+<div id="in" style="display:none"><h3 id="w"></h3><button class="b2" onclick="outt()">Dekonekte</button></div>
+<p id="m"></p><h3>Kategori</h3><ul id="l"></ul>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.0/dist/umd/supabase.js"></script>
+<script>
+var db=supabase.createClient("https://rnwufchunuayqkivfqkf.supabase.co","sb_publishable_YBfnR5ysGK7KqnwjPsKWTg_kuCUjPXj");
+function $(i){return document.getElementById(i)}
+function msg(t){$("m").textContent=t}
+async function up(){msg("Ap kreye...");var r=await db.auth.signUp({email:$("e").value.trim(),password:$("p").value,options:{data:{full_name:$("n").value.trim()}}});if(r.error)return msg("Erè: "+r.error.message);if(!r.data.session)return msg("Kont kreye. Tcheke imèl ou pou konfime l, epi konekte.");msg("");show()}
+async function inn(){msg("Ap konekte...");var r=await db.auth.signInWithPassword({email:$("e").value.trim(),password:$("p").value});if(r.error)return msg("Erè: "+r.error.message);msg("");show()}
+async function outt(){await db.auth.signOut();show()}
+async function show(){var s=(await db.auth.getSession()).data.session;$("out").style.display=s?"none":"block";$("in").style.display=s?"block":"none";if(!s)return;var q=await db.from("profiles").select("full_name,role").eq("id",s.user.id).single();$("w").textContent=q.error?"Konekte, men pa jwenn pwofil: "+q.error.message:"Byenvini "+(q.data.full_name||"")+" - wòl: "+q.data.role}
+db.from("categories").select("name").order("id").then(function(r){(r.data||[]).forEach(function(c){var li=document.createElement("li");li.textContent=c.name;$("l").appendChild(li)})});
+show();
+</script></body></html>
