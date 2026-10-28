@@ -1,23 +1,166 @@
 <!DOCTYPE html>
-<html lang="ht"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bazar Mwen</title>
-<style>body{font-family:sans-serif;margin:0;padding:16px;max-width:480px}input,button{width:100%;padding:12px;margin:6px 0;font-size:16px;box-sizing:border-box}button{background:#0a7d3b;color:#fff;border:0;border-radius:6px}.b2{background:#555}#m{color:#b00;min-height:20px}</style></head>
-<body><h1>Bazar Mwen</h1>
-<div id="out"><h3>Antre oswa kreye yon kont</h3>
-<input id="n" placeholder="Non ou (pou enskripsyon)">
-<input id="e" type="email" placeholder="Imèl">
-<input id="p" type="password" placeholder="Modpas (omwen 6 karaktè)">
-<button onclick="up()">Kreye kont</button><button class="b2" onclick="inn()">Konekte</button></div>
-<div id="in" style="display:none"><h3 id="w"></h3><button class="b2" onclick="outt()">Dekonekte</button></div>
-<p id="m"></p><h3>Kategori</h3><ul id="l"></ul>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.0/dist/umd/supabase.js"></script>
+<html lang="ht">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bazar Mwen</title>
+<style>
+  :root { --vet:#0b7f3f; --gri:#555; --tèks:#111; --fon:#fff; --wouj:#b00020; }
+  * { box-sizing:border-box; }
+  body { font-family:Roboto, Arial, sans-serif; margin:0; padding:24px 20px 60px; color:var(--tèks); background:var(--fon); max-width:560px; margin-inline:auto; }
+  h1 { font-size:2.2rem; margin:0 0 20px; }
+  h2 { font-size:1.4rem; margin:24px 0 12px; }
+  input { width:100%; padding:16px; font-size:1.1rem; border:1px solid #888; border-radius:4px; margin-bottom:12px; }
+  button { width:100%; padding:16px; font-size:1.1rem; color:#fff; border:0; border-radius:8px; margin-bottom:12px; }
+  #btnKreye { background:var(--vet); }
+  #btnKonekte { background:var(--gri); }
+  #btnSòti { background:var(--gri); }
+  button:disabled { opacity:.6; }
+  #mesaj { min-height:1.4em; margin:8px 0 16px; font-size:1.05rem; white-space:pre-wrap; word-break:break-word; }
+  #mesaj.erè { color:var(--wouj); }
+  #mesaj.bon { color:var(--vet); }
+  #kont { border:1px solid #ccc; border-radius:8px; padding:16px; margin-bottom:16px; }
+  .kache { display:none; }
+  ul { padding-left:22px; line-height:1.7; }
+</style>
+</head>
+<body>
+<h1>Bazar Mwen</h1>
+
+<div id="fòm">
+  <h2>Antre oswa kreye yon kont</h2>
+  <input id="non" type="text" placeholder="Non ou" autocomplete="name">
+  <input id="imel" type="email" placeholder="Imèl" autocomplete="email">
+  <input id="modpas" type="password" placeholder="Modpas (omwen 6 karaktè)" autocomplete="current-password">
+  <button id="btnKreye" type="button">Kreye kont</button>
+  <button id="btnKonekte" type="button">Konekte</button>
+</div>
+
+<div id="kont" class="kache">
+  <strong>Ou konekte.</strong>
+  <p id="enfoKont"></p>
+  <button id="btnSòti" type="button">Dekonekte</button>
+</div>
+
+<div id="mesaj"></div>
+
+<h2>Kategori</h2>
+<ul id="kategori"><li>Ap chaje…</li></ul>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-var db=supabase.createClient("https://rnwufchunuayqkivfqkf.supabase.co","sb_publishable_YBfnR5ysGK7KqnwjPsKWTg_kuCUjPXj");
-function $(i){return document.getElementById(i)}
-function msg(t){$("m").textContent=t}
-async function up(){msg("Ap kreye...");var r=await db.auth.signUp({email:$("e").value.trim(),password:$("p").value,options:{data:{full_name:$("n").value.trim()}}});if(r.error)return msg("Erè: "+r.error.message);if(!r.data.session)return msg("Kont kreye. Tcheke imèl ou pou konfime l, epi konekte.");msg("");show()}
-async function inn(){msg("Ap konekte...");var r=await db.auth.signInWithPassword({email:$("e").value.trim(),password:$("p").value});if(r.error)return msg("Erè: "+r.error.message);msg("");show()}
-async function outt(){await db.auth.signOut();show()}
-async function show(){var s=(await db.auth.getSession()).data.session;$("out").style.display=s?"none":"block";$("in").style.display=s?"block":"none";if(!s)return;var q=await db.from("profiles").select("full_name,role").eq("id",s.user.id).single();$("w").textContent=q.error?"Konekte, men pa jwenn pwofil: "+q.error.message:"Byenvini "+(q.data.full_name||"")+" - wòl: "+q.data.role}
-db.from("categories").select("name").order("id").then(function(r){(r.data||[]).forEach(function(c){var li=document.createElement("li");li.textContent=c.name;$("l").appendChild(li)})});
-show();
-</script></body></html>
+  var SUPABASE_URL = "https://rnwufchunuayqkivfqkf.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_YBfnR5ysGK7KqnwjPsKWTg_kuCUjPXj";
+  var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function montreMesaj(tèks, kalite) {
+    var m = $("mesaj");
+    m.textContent = tèks;
+    m.className = kalite || "";
+  }
+
+  function tradwi(erè) {
+    var tèks = (erè && erè.message) ? erè.message : String(erè);
+    var kreyòl = "";
+    if (/Invalid login credentials/i.test(tèks)) kreyòl = "Imèl la oswa modpas la pa kòrèk, oswa kont lan poko egziste.";
+    else if (/Email not confirmed/i.test(tèks)) kreyòl = "Imèl la poko konfime.";
+    else if (/already registered/i.test(tèks)) kreyòl = "Imèl sa a deja gen yon kont. Peze Konekte.";
+    else if (/rate limit/i.test(tèks)) kreyòl = "Twòp imèl voye. Tann yon ti moman.";
+    else if (/at least 6/i.test(tèks)) kreyòl = "Modpas la dwe gen omwen 6 karaktè.";
+    return (kreyòl ? kreyòl + "\n" : "") + "Erè Supabase: " + tèks;
+  }
+
+  async function chajeKategori() {
+    var r = await db.from("categories").select("*");
+    var lis = $("kategori");
+    lis.innerHTML = "";
+    if (r.error) { lis.innerHTML = "<li>Erè: " + r.error.message + "</li>"; return; }
+    r.data.forEach(function (k) {
+      var li = document.createElement("li");
+      li.textContent = k.name || k.nom || k.title || JSON.stringify(k);
+      lis.appendChild(li);
+    });
+  }
+
+  async function montreKont(user) {
+    $("fòm").classList.add("kache");
+    $("kont").classList.remove("kache");
+    var tèks = "Imèl: " + user.email;
+    var r = await db.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    if (r.error) tèks += "\nPwofil: erè — " + r.error.message;
+    else if (!r.data) tèks += "\nPwofil: poko jwenn nan tab profiles la.";
+    else {
+      var wòl = r.data.role || r.data.wol || r.data.type;
+      tèks += "\nPwofil: jwenn" + (wòl ? " (wòl: " + wòl + ")" : "");
+    }
+    $("enfoKont").style.whiteSpace = "pre-wrap";
+    $("enfoKont").textContent = tèks;
+  }
+
+  function montreFòm() {
+    $("kont").classList.add("kache");
+    $("fòm").classList.remove("kache");
+  }
+
+  async function kreyeKont() {
+    var non = $("non").value.trim();
+    var imel = $("imel").value.trim();
+    var modpas = $("modpas").value;
+    if (!imel || !modpas) { montreMesaj("Tape imèl ak modpas ou.", "erè"); return; }
+    $("btnKreye").disabled = true;
+    montreMesaj("Ap kreye kont lan…");
+    try {
+      var r = await db.auth.signUp({ email: imel, password: modpas, options: { data: { full_name: non } } });
+      if (r.error) { montreMesaj(tradwi(r.error), "erè"); return; }
+      if (r.data && r.data.session) {
+        montreMesaj("Kont lan kreye epi ou konekte.", "bon");
+        await montreKont(r.data.user);
+      } else if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+        montreMesaj("Imèl sa a deja gen yon kont. Peze Konekte.", "erè");
+      } else {
+        montreMesaj("Kont lan kreye men Supabase mande konfimasyon imèl. Tcheke paramèt Confirm email.", "erè");
+      }
+    } catch (e) {
+      montreMesaj("Pwoblèm rezo oswa kòd: " + (e && e.message ? e.message : e), "erè");
+    } finally {
+      $("btnKreye").disabled = false;
+    }
+  }
+
+  async function konekte() {
+    var imel = $("imel").value.trim();
+    var modpas = $("modpas").value;
+    if (!imel || !modpas) { montreMesaj("Tape imèl ak modpas ou.", "erè"); return; }
+    $("btnKonekte").disabled = true;
+    montreMesaj("Ap konekte…");
+    try {
+      var r = await db.auth.signInWithPassword({ email: imel, password: modpas });
+      if (r.error) { montreMesaj(tradwi(r.error), "erè"); return; }
+      montreMesaj("Koneksyon reyisi.", "bon");
+      await montreKont(r.data.user);
+    } catch (e) {
+      montreMesaj("Pwoblèm rezo oswa kòd: " + (e && e.message ? e.message : e), "erè");
+    } finally {
+      $("btnKonekte").disabled = false;
+    }
+  }
+
+  async function dekonekte() {
+    await db.auth.signOut();
+    montreFòm();
+    montreMesaj("Ou dekonekte.", "bon");
+  }
+
+  $("btnKreye").addEventListener("click", kreyeKont);
+  $("btnKonekte").addEventListener("click", konekte);
+  $("btnSòti").addEventListener("click", dekonekte);
+
+  chajeKategori();
+  db.auth.getSession().then(function (r) {
+    if (r.data && r.data.session) montreKont(r.data.session.user);
+  });
+</script>
+</body>
+</html>
